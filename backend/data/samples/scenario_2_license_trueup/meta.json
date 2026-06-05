@@ -1,0 +1,10 @@
+{
+  "title": "Software License True-Up",
+  "description": "Vendor claims $250K true-up for 150 concurrent users vs. 100-user contract. Vendor counts connections (not sessions).",
+  "claim_amount": 250000,
+  "claim_type": "license_trueup",
+  "vendor": "Enterprise Software Vendor",
+  "claimed_basis": "150 concurrent connections measured",
+  "actual_basis": "112 concurrent sessions (true concurrent user definition per contract)",
+  "resolution": "Methodology dispute documented. Settlement at $60K (legitimate portion)."
+}

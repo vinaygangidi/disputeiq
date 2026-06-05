@@ -1,0 +1,10 @@
+{
+  "title": "Consulting Scope Creep Dispute",
+  "description": "Consulting firm claims $180K for out-of-scope work. SOW language ambiguous around feature customization.",
+  "claim_amount": 180000,
+  "claim_type": "scope_creep",
+  "vendor": "Consulting Services Inc.",
+  "claimed_basis": "Additional feature customization work performed",
+  "actual_basis": "SOW had ambiguous language; portion legitimate, portion unsubstantiated",
+  "resolution": "Agent identifies $80K legitimate + $100K unsubstantiated. Settlement at $90K ($80K legitimate + $10K goodwill)."
+}

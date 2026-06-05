@@ -1,0 +1,10 @@
+{
+  "title": "Cloud Overage Dispute (AWS)",
+  "description": "AWS claims $500K overage for exceeding committed spend by 30%. Vendor uses different time window than contract specifies.",
+  "claim_amount": 500000,
+  "claim_type": "cloud_overage",
+  "vendor": "Amazon Web Services",
+  "claimed_basis": "Exceeded committed spend by 30% (calendar month measurement)",
+  "actual_basis": "Committed spend cap defined by billing cycle (not calendar month)",
+  "resolution": "Methodology mismatch identified. Dispute liability reduced to $0."
+}
