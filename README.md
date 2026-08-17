@@ -1,368 +1,156 @@
 # DisputeIQ
 
-AI-Powered Vendor Dispute Defense System on UiPath Maestro Case + Claude Code
+Vendor dispute defense scaffold on UiPath + LangGraph: 5 agent stubs, FastAPI backend. Pipeline unimplemented.
 
-> Built for UiPath AgentHack 2026 (Track 1: Maestro Case)
+![Language](https://img.shields.io/badge/language-Python-blue?style=flat-square)
+![Last Commit](https://img.shields.io/github/last-commit/vinaygangidi/disputeiq?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
-**Live Demo:** [Coming soon — awaiting UiPath Labs access]
+> **Status: incomplete scaffold.** This was a UiPath AgentHack 2026 (Track 1) submission
+> built while waiting on UiPath Labs access that did not arrive. The architecture, agent
+> topology, and dispute scenarios are worked out; the agent logic is not implemented. See
+> [Limitations](#limitations) before evaluating this as working software.
 
----
+## What This Does
 
-## What Problem Does This Solve?
+Sketches a system for defending against vendor overbilling disputes — the recurring
+enterprise problem where a vendor claims money owed based on a measurement methodology
+that differs from what the contract specifies.
 
-Enterprise IT organizations under a CIO routinely face vendor claims worth $500K+ (cloud overages, software license true-ups, usage audits). Today these disputes are resolved manually over 3–6 months with scattered evidence, no audit trail, and significant financial risk.
+The design intent is a five-stage case lifecycle on UiPath Maestro, with LangGraph agents
+handling intake, evidence gathering, strategy, negotiation support, and resolution, and
+human approval gates at the decisions that matter. What exists today is the FastAPI
+scaffold, the LangGraph graph wiring, and three fully specified dispute scenarios.
 
-**Real examples:**
-- Cloud vendor claims $500K overage for exceeding committed spend, but uses different time window than contract specifies
-- Software vendor claims $250K license true-up for 150 concurrent users, but vendor counts connections (not sessions) — actual = 112 users
-- Consulting firm claims $180K for out-of-scope work with ambiguous SOW language — 40% legitimate, 60% unsubstantiated
+The domain modeling is the substantive part. Each scenario captures a real methodology
+mismatch — claimed basis versus actual contractual basis — and its resolution.
 
-**Current approach:** Hire consultants, manually review everything, argue with vendor for 6 months, settle for 60% of claim. Cost: $50K-$200K per dispute. Time: 3–6 months.
+## How It Works
 
-**DisputeIQ approach:** Each dispute is a **Maestro Case** with AI agents gathering evidence autonomously and humans deciding at critical gates. Result: resolution in weeks, not months, with full audit trail showing evidence considered and reasoning applied.
+Two of the four endpoints are implemented:
 
----
+| Method | Path | Status | Description |
+|---|---|---|---|
+| `GET` | `/health` | ✅ Works | Returns status, version, and `mode: demo` |
+| `GET` | `/samples` | ✅ Works | Reads `meta.json` from each scenario directory |
+| `GET` | `/` | ✅ Works | Endpoint index |
+| `POST` | `/analyze` | ⚠️ Stub | Yields 3 hardcoded SSE events, then `[DONE]`. Does not analyze the posted claim |
 
-## How It Works: The 5-Stage Case Lifecycle
-
-```
-Claim Arrives
-    ↓
-Stage 1: Claim Intake & Intelligence
-    [Claude Code Agent → risk scoring, claim parsing, auto-triage]
-    ↓
-Stage 2: Evidence Gathering
-    [Claude Code Agents → contract analysis, usage data queries, discrepancy detection]
-    ↓
-Stage 3: Defense Strategy & Human Decision
-    [Claude Code Agent → defense option generation] → [Human Legal/Finance review]
-    ↓
-Stage 4: Negotiation (Agent-Assisted)
-    [Claude Code Agent → negotiation support] + [Human negotiator]
-    ↓
-Stage 5: Resolution & Learning
-    [Claude Code Agents → settlement documentation, vendor risk profile update]
-    ↓
-Case Closed (with full audit trail)
-```
-
-### Stage 1: Claim Intake & Intelligence
-- **Trigger:** Vendor claim arrives (email, letter, portal notification)
-- **Agents:** Dispute Intelligence Agent (Claude Code)
-  - Parses claim document using NLP
-  - Extracts key facts: claimed amount, measurement basis, time period
-  - Scores risk/severity automatically
-  - Routes high-risk disputes to Stage 2 immediately; low-risk queued for batch review
-- **Output:** Case created with severity score, extracted details, initial risk flags
-
-### Stage 2: Evidence Gathering
-- **Agents:** Contract Analysis, Usage Data, Evidence Synthesis (Claude Code)
-  - **Contract Analysis:** Extracts exact terms from contract PDF
-    - What measurement method is specified?
-    - What are true-up caps and audit frequency limits?
-    - What dispute resolution clauses apply?
-  - **Usage Data:** Queries cloud cost APIs (AWS Cost Explorer, Azure Cost Management) for actual usage
-  - **Evidence Synthesis:** Correlates contract terms vs. vendor claim vs. actual usage
-    - Identifies measurement methodology mismatches
-    - Calculates actual vs. claimed delta
-    - Generates evidence report with confidence score
-- **Human:** Legal reviews extracted contract terms for accuracy (SLA: 72 hours, escalate to Legal Manager if breached)
-- **Output:** Evidence package with contract terms, usage data, discrepancies, confidence score
-
-### Stage 3: Defense Strategy & Human Decision
-- **Agent:** Strategy Agent (Claude Code)
-  - Analyzes evidence, generates defense options:
-    - **Option A:** Challenge measurement methodology (if contract specifies different method)
-    - **Option B:** Accept partial liability (if usage exceeded but vendor overstated)
-    - **Option C:** Reject in full (if vendor error confirmed)
-  - Ranks options by confidence and financial impact
-- **Human:** Senior Legal/Finance review in Action Center
-  - Decision form shows claim, evidence, agent recommendations side-by-side
-  - Outputs: `{decision: fight|negotiate|settle, authorized_amount, notes}`
-  - SLA: 48h reminder, 5-day escalate to CIO/VP
-- **Routing:** DMN Decision Table routes to Stage 4 (negotiate), Stage 5 (fight), or auto-reject
-- **Output:** Approved defense strategy with authorized parameters
-
-### Stage 4: Negotiation (Agent-Assisted)
-- **Agent:** Negotiation Agent (Claude Code)
-  - Monitors vendor responses as negotiation progresses
-  - Re-analyzes with new information
-  - Generates counter-offer positions
-- **Human:** Negotiator updates case via Action App as negotiation evolves
-- **Loop:** Vendor responds → agent re-analyzes → human decides → continue or resolve
-- **Output:** Negotiation log, updated positions, settlement parameters
-
-### Stage 5: Resolution & Learning
-- **Agents:** Resolution Agent + Learning Agent (Claude Code)
-  - **Resolution:** Documents final settlement, posts payment instruction to ERP
-  - **Learning:** Extracts patterns and updates vendor risk profile
-    - "This vendor overstates claims by ~15% on average"
-    - "When vendor claims X, historical accuracy is Y%"
-  - **Notification:** Sends resolution notice to vendor
-- **Output:** Closed case with full audit trail, updated vendor risk profile, lessons learned
-
----
-
-## UiPath Components Used
-
-| Component | Purpose |
-|-----------|---------|
-| **Maestro Case** | Orchestrates dispute lifecycle with stages, SLAs, escalations, human decision gates |
-| **Agent Builder** | Low-code agents for notification and triage (future: claim classification) |
-| **Document Understanding (IXP)** | Extracts data from vendor claim PDFs and contract documents |
-| **Action Center + Action Apps** | Human review forms for Legal, Finance, Negotiators |
-| **API Workflows** | Connects to cloud cost APIs, ERP systems for data retrieval |
-| **Coded Agents (Python SDK `uipath-langchain`)** | Claude-powered agents for intelligence, reasoning, analysis |
-| **Orchestrator Buckets** | Stores dispute documents and evidence artifacts |
-| **Orchestrator Assets** | Stores API keys, configuration, thresholds |
-
----
-
-## Claude Code Agents (Bonus Points)
-
-**All 7 coded agents built with Claude Code using UiPath's Python SDK (`uipath-langchain` LangGraph framework):**
-
-| Agent | Stage | Purpose |
-|-------|-------|---------|
-| **Dispute Intelligence Agent** | 1 | NLP claim parsing, risk scoring, severity classification, auto-triage |
-| **Contract Analysis Agent** | 2 | Contract term extraction, measurement method analysis, clause reasoning |
-| **Usage Data Agent** | 2 | Cloud API queries (AWS/Azure), data normalization, delta calculation |
-| **Evidence Synthesis Agent** | 2 | Multi-source correlation, discrepancy identification, confidence scoring |
-| **Strategy Agent** | 3 | Defense option generation, risk assessment, recommendation ranking |
-| **Negotiation Agent** | 4 | Counter-offer calculation, vendor response analysis, position tracking |
-| **Resolution Agent** | 5 | Settlement documentation, vendor risk profile update, audit trail generation |
-
-**Evidence of Claude Code usage:** See `docs/claude-code-usage.md` for prompt logs, session transcripts, and agent integration details.
-
----
-
-## Demo Scenarios (Pre-Built Fixtures)
-
-### Scenario 1: Cloud Overage Dispute
-**Setup:** AWS claims $500K overage for exceeding committed spend by 30%
-- Contract specifies: calendar month measurement
-- Vendor uses: billing cycle measurement (5 days offset)
-- Actual usage: within committed limits if measured correctly
-- **Agent output:** Methodology mismatch identified, dispute liability = $0
-- **Resolution:** Vendor drops claim
-
-### Scenario 2: Software License True-Up
-**Setup:** Vendor claims $250K for 150 concurrent users vs. 100-user contract
-- Contract defines: concurrent sessions (not connections)
-- Vendor counts: connections (includes idle sessions)
-- Actual usage: 112 concurrent sessions
-- **Agent output:** Methodology dispute documented, legitimate portion = $60K
-- **Resolution:** Settlement at $60K
-
-### Scenario 3: Consulting Scope Creep
-**Setup:** Consulting firm claims $180K for out-of-scope work
-- SOW language: ambiguous around feature customization scope
-- Agent analysis: $80K legitimate, $100K unsubstantiated
-- Vendor willingness: flexible given client relationship
-- **Agent output:** Recommendation = split difference
-- **Resolution:** Settlement at $90K ($80K legitimate + $10K goodwill)
-
----
-
-## Repository Structure
+Each agent under `agents/` defines a LangGraph `StateGraph` with the same three nodes:
 
 ```
-disputeiq/
-├── README.md                                  # This file
-├── LICENSE                                    # MIT
-├── .gitignore
-│
-├── maestro/
-│   ├── DisputeIQ.xaml                        # Maestro Case definition (exported from Studio Web)
-│   └── README.md                             # Setup instructions for Maestro
-│
-├── agents/                                    # Claude Code powered Coded Agents
-│   ├── dispute_intelligence/
-│   │   ├── agent.py                          # LangGraph agent definition
-│   │   ├── pyproject.toml                    # Python package config
-│   │   └── langgraph.json                    # Graph definition (auto-generated)
-│   ├── contract_analysis/
-│   │   ├── agent.py
-│   │   ├── pyproject.toml
-│   │   └── langgraph.json
-│   ├── evidence_synthesis/
-│   │   ├── agent.py
-│   │   ├── pyproject.toml
-│   │   └── langgraph.json
-│   ├── strategy/
-│   │   ├── agent.py
-│   │   ├── pyproject.toml
-│   │   └── langgraph.json
-│   ├── resolution/
-│   │   ├── agent.py
-│   │   ├── pyproject.toml
-│   │   └── langgraph.json
-│   └── README.md                             # Agent development guide
-│
-├── backend/
-│   ├── main.py                               # FastAPI webhook + SSE streaming
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   ├── data/
-│   │   └── samples/
-│   │       ├── scenario_1_cloud_overage/
-│   │       │   ├── meta.json                 # Scenario metadata
-│   │       │   ├── vendor_claim.json         # Raw claim document
-│   │       │   ├── contract.pdf              # Sample contract
-│   │       │   └── usage_data.json           # Cloud usage data
-│   │       ├── scenario_2_license_trueup/
-│   │       │   └── ... (same structure)
-│   │       └── scenario_3_scope_creep/
-│   │           └── ... (same structure)
-│   └── README.md                             # Backend setup
-│
-├── frontend/
-│   ├── package.json
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── DisputeCase.tsx               # Case timeline view
-│   │   │   ├── EvidencePanel.tsx             # Contract vs. usage comparison
-│   │   │   ├── AgentActivity.tsx             # Live agent streaming
-│   │   │   └── DecisionGate.tsx              # Human review interface
-│   │   └── styles/
-│   └── README.md                             # Frontend setup
-│
-├── docs/
-│   ├── architecture.md                       # Full technical architecture
-│   ├── claude-code-usage.md                  # Claude Code bonus points documentation
-│   ├── maestro-case-design.md               # Maestro Case definition details
-│   ├── agent-prompts.md                     # System prompts for each agent
-│   └── deployment.md                        # Deployment to UiPath Automation Cloud
-│
-└── .github/
-    └── workflows/
-        └── ci.yml                            # GitHub Actions CI (lint + test)
+START → parse_claim → score_risk → route_dispute → END
+                                         │
+                        risk_score > 0.7 ├→ stage_2_high_priority
+                        otherwise        └→ stage_1_queue_batch
 ```
 
----
+The graph compiles and the routing threshold is real. `parse_claim` and `score_risk` are
+`pass` with `# TODO` comments, so the state they are meant to populate stays empty and
+`route_dispute` always reads `risk_score` as its initial `0.0`.
 
-## Quick Start (Once UiPath Labs Access Arrives)
+### Dispute scenarios
 
-### 1. Prerequisites
-```bash
-# Python 3.11+
-python --version
+The three fixtures in `backend/data/samples/` are the most complete artifact here:
 
-# UiPath CLI
-npm install -g @uipath/cli
+| Scenario | Claim | Methodology mismatch | Modeled outcome |
+|---|---|---|---|
+| Cloud overage (AWS) | $500K | Vendor measured by calendar month; contract caps by billing cycle | Liability reduced to $0 |
+| License true-up | $250K | Vendor counted 150 connections; contract defines 112 concurrent sessions | Settled at $60K |
+| Consulting scope creep | $180K | SOW ambiguous on feature customization | $80K legitimate, $100K unsubstantiated; settled at $90K |
 
-# Clone repo
-git clone https://github.com/vinaygangidi/disputeiq.git
-cd disputeiq
-```
+## Quickstart
 
-### 2. Set Up Coded Agents
+Only the backend runs. There is no frontend and no deployable UiPath package.
+
+1. Clone and install:
+   ```bash
+   git clone https://github.com/vinaygangidi/disputeiq.git
+   cd disputeiq/backend
+   python3 -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. Start the service:
+   ```bash
+   python main.py          # or: uvicorn main:app --reload --port 8000
+   ```
+
+3. Exercise the working endpoints:
+   ```bash
+   curl http://localhost:8000/health
+   curl http://localhost:8000/samples
+   ```
+
+4. `POST /analyze` accepts any JSON object and returns the same placeholder stream
+   regardless of input:
+   ```bash
+   curl -N -X POST http://localhost:8000/analyze \
+     -H "Content-Type: application/json" -d '{}'
+   ```
+
+### Agents
+
+Each agent is a separate installable package. They are not wired into the backend.
+
 ```bash
 cd agents/dispute_intelligence
 pip install -e .
-uipath auth  # Browser-based authentication to UiPath Cloud
-uipath init
-uipath run dispute_intelligence --input '{"claim_text": "..."}'
+python agent.py       # compiles the graph and invokes it with a placeholder state
 ```
 
-### 3. Deploy to UiPath Automation Cloud
-```bash
-uipath pack
-uipath publish
-```
+Running an agent directly will not produce useful output — the node functions return
+`None`.
 
-### 4. Define Maestro Case in Studio Web
-- Open UiPath Studio Web
-- Import `maestro/DisputeIQ.xaml`
-- Configure Service Tasks to invoke deployed agents
-- Configure Action Center User Tasks for human review
-- Deploy to Automation Cloud
+## Configuration
 
-### 5. Test End-to-End
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py  # Starts webhook receiver on localhost:8000
+The code reads exactly one environment variable. `load_dotenv()` is called, so a
+`backend/.env` file is honored.
 
-# In another terminal, trigger a demo scenario:
-curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d @backend/data/samples/scenario_1_cloud_overage/vendor_claim.json
-```
+| Name | Required | Default | Description |
+|---|---|---|---|
+| `PORT` | No | `8000` | Port for the uvicorn server when running `python main.py` |
 
----
+No credentials are read anywhere. `requirements.txt` pins `openai`, `boto3`,
+`azure-identity`, and `azure-storage-blob`, but none of these are imported by any file in
+the repository — no API key, AWS profile, or Azure credential is needed or used.
 
-## Setup Instructions (Detailed)
+## Limitations
 
-See individual README files in each directory:
-- **Backend setup:** `backend/README.md`
-- **Frontend setup:** `frontend/README.md`
-- **Coded agents setup:** `agents/README.md`
-- **Maestro Case setup:** `maestro/README.md`
-
----
-
-## Architecture & Design
-
-Full technical documentation: `docs/architecture.md`
-
-Key design decisions:
-- **Case over Process:** Disputes are inherently variable (each one is unique). Maestro Case paradigm fits better than rigid BPMN.
-- **Multi-stage with HITL:** Each stage has clear human decision gates. Agents propose, humans decide.
-- **Evidence-driven:** Every decision is documented with evidence, reasoning, and confidence scores. Satisfies audit & compliance requirements.
-- **Audit trail:** Maestro logs every decision, evidence, and reasoning. Supports dispute resolution challenges and compliance reviews.
-
----
-
-## Bonus Points: Claude Code Usage
-
-This solution uses Claude Code (Anthropic) via UiPath's Python SDK (`uipath-langchain` LangGraph framework) to build all 7 coded agents that power the system.
-
-**What was built with Claude Code:**
-- Multi-step reasoning agents for contract analysis, evidence synthesis, and strategy generation
-- NLP pipelines for claim parsing and risk scoring
-- API integration with cloud cost platforms
-- Complex decision logic for dispute routing and settlement calculation
-
-**Evidence:**
-- See `docs/claude-code-usage.md` for detailed documentation
-- Session transcripts and prompts showing Claude Code usage
-- Agent code showing integration with UiPath platform
-
----
-
-## Submission Details
-
-**Track:** UiPath AgentHack 2026 — Track 1 (Maestro Case)
-
-**GitHub:** https://github.com/vinaygangidi/disputeiq (public, MIT license)
-
-**Components:**
-- Maestro Case orchestration (5 stages, HITL gates, SLAs)
-- 7 Claude Code powered agents (Python `uipath-langchain`)
-- Document Understanding for contract/claim PDFs
-- Action Center forms for human review
-- FastAPI + React dashboard
-
-**Demo scenarios:** 3 pre-built dispute cases (fixtures)
-
----
-
-## Contributing
-
-This is a hackathon submission. Contributions welcome after the competition ends.
-
----
+- **The dispute pipeline is not implemented.** `POST /analyze` yields three hardcoded SSE
+  events and ignores the posted claim entirely. No agent is invoked.
+- **`parse_claim` and `score_risk` are empty.** Both are `pass` with `# TODO`. There is no
+  NLP extraction and no risk scoring anywhere in the repository — roughly 21 TODO or stub
+  markers remain across the codebase.
+- **The five agents are the same file.** `dispute_intelligence`, `evidence_synthesis`,
+  `strategy`, `resolution`, and `contract_analysis` are byte-identical apart from one
+  docstring line. They are five copies of one scaffold, not five specialists. Each has its
+  own `pyproject.toml` with a distinct package name.
+- **No LLM is called.** Nothing imports `openai`, `anthropic`, or any model client, despite
+  `openai==1.3.0` being pinned and the README history describing "Claude Code powered"
+  agents.
+- **No UiPath integration exists.** There is no `maestro/` directory, no `.xaml`, no
+  Orchestrator queue definition, and no Action Center task. UiPath Maestro and Action
+  Center are design intent only; `uipath-langchain` is declared as a dependency but never
+  imported.
+- **No frontend.** Earlier versions of this README described a `frontend/` directory and a
+  `frontend/README.md`. Neither exists.
+- **Sample scenarios have metadata only.** Each directory under
+  `backend/data/samples/` contains `meta.json` and nothing else — no `vendor_claim.json`,
+  no contract text, no evidence documents. An earlier version of this README included a
+  `curl` command posting a `vendor_claim.json` that is not in the repository.
+- **CI passes without testing anything.** `.github/workflows/ci.yml` runs
+  `pytest tests/ -v --tb=short || true` against a `tests/` directory that does not exist.
+  The `|| true` means the step succeeds regardless, so a green check mark on this repo
+  does not indicate working code.
+- **Unused dependencies.** `boto3`, `azure-identity`, `azure-storage-blob`, `httpx`,
+  `pydantic-settings`, and `openai` are all pinned and none are imported.
+- **CORS is wide open.** `allow_origins=["*"]` combined with `allow_credentials=True`,
+  with all methods and headers permitted. This must be restricted to a real origin
+  allowlist before the service is exposed anywhere.
+- **Dependency versions are from late 2023.** `fastapi==0.104.1`, `openai==1.3.0`,
+  `pydantic==2.5.0` — these will need updating before the code is extended.
 
 ## License
 
-MIT — See LICENSE file for details.
-
----
-
-## Contact
-
-**Team:** DisputeIQ (UiPath AgentHack 2026 participant)
-
-Questions? See `docs/` directory or GitHub Issues.
+MIT — see [LICENSE](LICENSE).
